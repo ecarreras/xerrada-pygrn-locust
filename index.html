@@ -56,10 +56,42 @@ count: false
 
   1. Què és testing de càrrega
   2. Què és Locust
-  3. Algun exemple pràctic
+  3. Algunes funcionalitats
+  4. Algun exemple pràctic
+  5. Extendre locust
 
 ---
-# Què és testing de càrrega
+# Què és testing de rendiment?
+
+Les proves de rendiment són les proves que es realitzen, des d'una perspectiva,
+per **determinar la rapidesa amb que realitza una tasca un sistema en condicions
+*particulars* de treball**.
+
+També pot servir per validar i verificar altres atributs de la qualitat del sistema,
+com ara l'**escalabilitat**, **fiabilitat** i **ús dels recursos**.
+
+- Proves de càrrega
+- Proves d'estrés
+- Proves d'estavilitat
+- Proves de pics
+
+
+???
+
+- Proves de càrrega:
+
+  * Comportament d'una aplicació sota una quantitat de peticions esperada.
+  * Aquesta càrrega pot ser el nombre esperat d'usuaris concurrents
+  * Mostrar els temps de resposta
+  * Monitoritzar altres parts i detectar colls d'ampolla
+
+- Proves d'estrés
+  * Com els tests de càrrega per intentant buscar els **limits** de l'aplicació
+- Proves d'estavilitat
+  * Una càrrega esperada continuada. Es pot fer servir per detectar fugues de memòria
+- Proves de pics
+  * Observar com evoluciona el sistema en pics de peticions, normlament per detectar sistemes
+    que escalen automàticament
 
 
 
@@ -67,11 +99,114 @@ count: false
 
 # Què és Locust
 
+És una eina que ens permet fer tests de rendiment **escrivint els comportaments en Python**
+
+- Pàgina web: [https://locust.io/](https://locust.io/)
+- Llenguatge principal: Python
+- Llicència: MIT
+- Codi: [https://github.com/locustio/locust](https://github.com/locustio/locust)
 
 
 ---
-# Algun exemple pràctic
 
+# Algunes funcionalitats
+
+- Comportaments escrits en codi Python
+- Distribuït i escalable
+- Estadístiques en temps real via web
+- *Hackejable*
+
+---
+
+# Algun exemple pràctic (I)
+
+- El comportament es definexi en un fitxer `locustfile.py`
+
+```bash
+$ locust --host=http://example.com
+```
+
+- Obrim el navegador web a [http://127.0.0.1:8089/](http://127.0.0.1:8089/)
+
+![](locust_web.png)
+
+---
+# Algun exemple pràctic (II)
+## Parts d'un `locustfile.py`
+
+- **Locust**: Representa a un usuari (o perfil d'usuari)
+
+  - Definir temps mínim/màxim entre tasques
+  - Es poden definir tants perfils com es vulguin en un test
+  - Es poden donar importancia diferent a cada perfil
+
+- **TaskSet**: Representa un conjunt de tasques a realitzar
+
+  - Definir temps mínim/màxim del conjunt de tasques
+  - Definir donar més importància una tasca que a una altra
+  - Es poden definir tasques anidades
+
+---
+
+# Algun exemple pràctic (III)
+
+```python
+
+from locust import HttpLocust, TaskSet, task
+
+class UserBehavior(TaskSet):
+    def on_start(self):
+        """ on_start is called when a Locust start before any task is scheduled """
+        self.login()
+
+    def on_stop(self):
+        """ on_stop is called when the TaskSet is stopping """
+        self.logout()
+
+    def login(self):
+        self.client.post("/login", {"username":"ellen_key", "password":"education"})
+
+    def logout(self):
+        self.client.post("/logout", {"username":"ellen_key", "password":"education"})
+
+    @task(2)
+    def index(self):
+        self.client.get("/")
+
+    @task(1)
+    def profile(self):
+        self.client.get("/profile")
+
+class WebsiteUser(HttpLocust):
+    task_set = UserBehavior
+    min_wait = 5000
+    max_wait = 9000
+```
+
+---
+# Extendre locust
+
+- Events Hooks
+    
+  Podem subscriure'ns a diferents esdeveniments durant un test: *request success*,
+  *request failure*, ...
+
+- Altres protocols
+
+  Està molt pensat per protocol HTTP, però podem escriure qualsevol client
+  que implementi un altre protocol. [locust-xmlrpc](https://github.com/gisce/locust-xmlrpc)
+
+  - Web
+
+  La web està feta amb [Flask](http://flask.pocoo.org/) per tant es pot extendre fent:
+
+  ```python
+  from locust import web
+
+  @web.app.route("/added_page")
+  def my_added_page():
+      return "Another page"
+  ```
 
 ---
 
